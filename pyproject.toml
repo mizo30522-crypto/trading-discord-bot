@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trading-discord-bot"
+version = "0.1.0"
+description = "Discord bot that posts a daily Forex / Crypto / Gold market report using AMT + DVA + FRVP + STDV + POI + Orderflow + Volume Profile."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "mizo30522-crypto" }]
+dependencies = [
+    "discord.py>=2.3,<3.0",
+    "apscheduler>=3.10,<4.0",
+    "ccxt>=4.3",
+    "yfinance>=0.2.40",
+    "pandas>=2.1",
+    "numpy>=1.26",
+    "matplotlib>=3.8",
+    "mplfinance>=0.12.10b0",
+    "python-dotenv>=1.0",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "aiohttp>=3.9",
+    "tzdata>=2024.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+trading-bot = "trading_bot.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
