@@ -26,10 +26,10 @@ class Settings(BaseSettings):
     schedule_time: str = Field(default="07:00", alias="SCHEDULE_TIME")
 
     symbols_raw: str = Field(
-        default="BTC/USDT,ETH/USDT,EURUSD=X,GBPUSD=X,USDJPY=X,XAUUSD=X",
+        default="BTC/USDT,ETH/USDT,EURUSD=X,GBPUSD=X,USDJPY=X,GC=F",
         alias="SYMBOLS",
     )
-    crypto_exchange: str = Field(default="binance", alias="CRYPTO_EXCHANGE")
+    crypto_exchange: str = Field(default="kraken", alias="CRYPTO_EXCHANGE")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     @field_validator("log_level")

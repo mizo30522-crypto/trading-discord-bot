@@ -20,7 +20,7 @@ containing every metric, plus the chart attached as an image.
 
 - Runs daily at a configurable time (default **07:00 UTC**) via APScheduler.
 - Slash commands: `/report <symbol>`, `/symbols`, `/ping`, `/health`.
-- Crypto data via `ccxt` (Binance public API by default — no key required).
+- Crypto data via `ccxt` (Kraken public API by default — no key required, works from any region).
 - FX & Gold data via `yfinance` (no key required).
 - Pluggable symbol list via env var.
 - Pure-Python analysis (numpy / pandas) — fully unit-tested.
@@ -53,7 +53,7 @@ trading-bot
 
 | Command | Description |
 |---|---|
-| `/report <symbol>` | Render an on-demand market report for any supported symbol. |
+| `/report <symbol>` | Render an on-demand market report for any supported symbol (e.g. `BTC/USDT`, `EURUSD=X`, `GC=F`). |
 | `/symbols` | List the symbols included in the daily schedule. |
 | `/ping` | Latency check. |
 | `/health` | Verifies upstream data sources are reachable. |

@@ -12,7 +12,7 @@ def test_symbols_default(monkeypatch: pytest.MonkeyPatch) -> None:
     s = Settings(_env_file=None)  # type: ignore[call-arg]
     assert "BTC/USDT" in s.symbols
     assert "EURUSD=X" in s.symbols
-    assert "XAUUSD=X" in s.symbols
+    assert "GC=F" in s.symbols
 
 
 def test_schedule_time_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
