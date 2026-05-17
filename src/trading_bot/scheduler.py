@@ -17,23 +17,27 @@ def build_scheduler(
     settings: Settings,
     job: Callable[[], Awaitable[None]],
 ) -> AsyncIOScheduler:
-    """Build a scheduler that fires ``job`` daily at the configured time."""
+    """Build a scheduler that fires ``job`` at each configured time of day."""
     sched = AsyncIOScheduler(timezone=settings.tz)
-    when = settings.schedule_hour_minute
-    trigger = CronTrigger(hour=when.hour, minute=when.minute, timezone=settings.tz)
-    sched.add_job(
-        job,
-        trigger=trigger,
-        id="daily_report",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=60 * 30,
-        replace_existing=True,
-    )
-    logger.info(
-        "Scheduled daily_report at %02d:%02d %s",
-        when.hour,
-        when.minute,
-        settings.schedule_tz,
-    )
+    for when in settings.schedule_times:
+        job_id = f"daily_report_{when.hour:02d}{when.minute:02d}"
+        trigger = CronTrigger(
+            hour=when.hour, minute=when.minute, timezone=settings.tz
+        )
+        sched.add_job(
+            job,
+            trigger=trigger,
+            id=job_id,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60 * 30,
+            replace_existing=True,
+        )
+        logger.info(
+            "Scheduled %s at %02d:%02d %s",
+            job_id,
+            when.hour,
+            when.minute,
+            settings.schedule_tz,
+        )
     return sched

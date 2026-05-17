@@ -52,14 +52,16 @@ class _BotRunner:
     def snapshot(self) -> dict[str, Any]:
         client = self.bot.client if self.bot else None
         user = getattr(client, "user", None) if client else None
+        times = [
+            f"{t.hour:02d}:{t.minute:02d}" for t in self.settings.schedule_times
+        ]
         return {
             "logged_in": bool(user is not None),
             "bot_user": str(user) if user else None,
             "guilds": [g.name for g in getattr(client, "guilds", [])] if client else [],
             "symbols": self.settings.symbols,
-            "schedule": (
-                f"{self.settings.schedule_time} {self.settings.schedule_tz}"
-            ),
+            "schedule": f"{', '.join(times)} {self.settings.schedule_tz}",
+            "schedule_times": times,
             "latency_ms": (
                 round(client.latency * 1000)
                 if client and not client.is_closed()

@@ -19,6 +19,14 @@ def test_schedule_time_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SCHEDULE_TIME", "07:30")
     s = Settings(_env_file=None)  # type: ignore[call-arg]
     assert s.schedule_hour_minute == time(7, 30)
+    assert s.schedule_times == [time(7, 30)]
+
+
+def test_schedule_time_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SCHEDULE_TIME", "06:00, 07:00 , 08:15")
+    s = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert s.schedule_times == [time(6, 0), time(7, 0), time(8, 15)]
+    assert s.schedule_hour_minute == time(6, 0)
 
 
 def test_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
