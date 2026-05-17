@@ -27,6 +27,7 @@ from trading_bot.analysis import (
     FRVPResult,
     OrderflowSummary,
     StdvBands,
+    TradeSignal,
     VolumeProfile,
 )
 from trading_bot.render.theme import DARK_THEME, apply_dark_theme
@@ -46,6 +47,7 @@ class ChartBundle:
     amt: AMTResult
     orderflow: OrderflowSummary
     poi: list[POI]
+    signal: TradeSignal
 
 
 def _candles(ax: plt.Axes, df: pd.DataFrame) -> None:
@@ -121,6 +123,45 @@ def _draw_horizontal(
         alpha=alpha,
         bbox={"facecolor": DARK_THEME["panel"], "edgecolor": "none", "alpha": 0.55, "pad": 1.0},
     )
+
+
+def _draw_signal(ax: plt.Axes, sig: TradeSignal) -> None:
+    """Overlay the trade plan (entry zone, SL, TP1/TP2/TP3) on the price axis."""
+    if sig.bias == "NEUTRAL":
+        return
+    # entry zone as a translucent band
+    lo = min(sig.entry_low, sig.entry_high)
+    hi = max(sig.entry_low, sig.entry_high)
+    ax.axhspan(lo, hi, color=DARK_THEME["trade_zone"], alpha=0.18, zorder=1)
+    _draw_horizontal(
+        ax,
+        sig.entry,
+        color=DARK_THEME["trade_entry"],
+        label=f"ENTRY {sig.bias}",
+        linestyle="-",
+        alpha=0.95,
+    )
+    _draw_horizontal(
+        ax,
+        sig.stop_loss,
+        color=DARK_THEME["trade_sl"],
+        label="SL",
+        linestyle="-",
+        alpha=0.95,
+    )
+    for idx, target, color in [
+        (1, sig.tp1, DARK_THEME["trade_tp1"]),
+        (2, sig.tp2, DARK_THEME["trade_tp2"]),
+        (3, sig.tp3, DARK_THEME["trade_tp3"]),
+    ]:
+        _draw_horizontal(
+            ax,
+            target.price,
+            color=color,
+            label=f"TP{idx} {target.source} R:R {target.rr:.1f}",
+            linestyle="-",
+            alpha=0.85,
+        )
 
 
 def _format_x(ax: plt.Axes, span_hours: float) -> None:
@@ -219,6 +260,8 @@ def render_market_chart(bundle: ChartBundle) -> bytes:
             fontsize=7,
             bbox_to_anchor=(0.995, 0.995),
         )
+
+    _draw_signal(ax_price, bundle.signal)
 
     _frvp_panel(ax_frvp, bundle.frvp.profile)
 

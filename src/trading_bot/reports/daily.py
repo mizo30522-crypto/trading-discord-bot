@@ -10,7 +10,9 @@ import discord
 import pandas as pd
 
 from trading_bot.analysis import (
+    TradeSignal,
     classify_amt,
+    compute_signal,
     developing_value_area,
     estimate_orderflow,
     find_points_of_interest,
@@ -46,6 +48,13 @@ _EMBED_COLORS = {
     "bearish": 0xFF5466,
     "balanced": 0x7C5CFF,
 }
+_BIAS_EMOJI_SIGNAL = {"LONG": "🟢 LONG", "SHORT": "🔴 SHORT", "NEUTRAL": "⚪ STAND ASIDE"}
+_QUALITY_EMOJI = {"high": "💎", "medium": "🔷", "low": "▪️"}
+_SIGNAL_EMBED_COLORS = {
+    "LONG": 0x26D07C,
+    "SHORT": 0xFF5466,
+    "NEUTRAL": 0x7C5CFF,
+}
 
 
 @dataclass(frozen=True)
@@ -79,6 +88,7 @@ def build_chart_bundle(bars: MarketBars) -> ChartBundle:
     amt = classify_amt(df, session_bars=min(24, len(df)))
     flow = estimate_orderflow(df, window=min(24, len(df)))
     poi = find_points_of_interest(df).levels
+    signal = compute_signal(df, amt=amt, vp=vp, stdv=stdv, flow=flow, poi=poi)
     return ChartBundle(
         symbol=bars.symbol,
         timeframe=bars.timeframe,
@@ -90,6 +100,7 @@ def build_chart_bundle(bars: MarketBars) -> ChartBundle:
         amt=amt,
         orderflow=flow,
         poi=poi,
+        signal=signal,
     )
 
 
@@ -100,10 +111,11 @@ def build_embed(bundle: ChartBundle, *, image_filename: str) -> discord.Embed:
     vp = bundle.volume_profile
     frvp = bundle.frvp.profile
     stdv = bundle.stdv
+    signal = bundle.signal
     last_close = float(bundle.df["close"].iloc[-1])
-    color = _EMBED_COLORS.get(flow.bias, 0x7C5CFF)
+    color = _SIGNAL_EMBED_COLORS.get(signal.bias, _EMBED_COLORS.get(flow.bias, 0x7C5CFF))
     embed = discord.Embed(
-        title=f"{bundle.symbol} · daily market report",
+        title=f"{bundle.symbol} · {_BIAS_EMOJI_SIGNAL[signal.bias]} · {_QUALITY_EMOJI[signal.quality]} {signal.quality.title()}",
         description=(
             f"**Last:** `{_fmt_price(last_close)}`  ·  "
             f"**AMT:** {_DAY_TYPE_EMOJI.get(amt.day_type, '•')} {amt.label}  ·  "
@@ -113,6 +125,26 @@ def build_embed(bundle: ChartBundle, *, image_filename: str) -> discord.Embed:
         color=color,
         timestamp=datetime.now(tz=UTC),
     )
+    if signal.bias == "NEUTRAL":
+        embed.add_field(
+            name="📍 Trade Plan",
+            value="No actionable setup — stand aside until the auction picks a side.",
+            inline=False,
+        )
+    else:
+        risk_pct = signal.risk_pct
+        embed.add_field(
+            name=f"📍 Trade Plan · {signal.bias}",
+            value=(
+                f"**Entry** `{_fmt_price(signal.entry_low)}` → `{_fmt_price(signal.entry_high)}` "
+                f"(mid `{_fmt_price(signal.entry)}`)\n"
+                f"🛑 **Stop Loss** `{_fmt_price(signal.stop_loss)}`  ·  risk `{risk_pct:+.2f}%`\n"
+                f"🎯 **TP1** `{_fmt_price(signal.tp1.price)}`  ·  {signal.tp1.source}  ·  R:R `{signal.tp1.rr:.2f}`\n"
+                f"🎯 **TP2** `{_fmt_price(signal.tp2.price)}`  ·  {signal.tp2.source}  ·  R:R `{signal.tp2.rr:.2f}`\n"
+                f"🎯 **TP3** `{_fmt_price(signal.tp3.price)}`  ·  {signal.tp3.source}  ·  R:R `{signal.tp3.rr:.2f}`"
+            ),
+            inline=False,
+        )
     embed.add_field(
         name="Volume Profile",
         value=(
@@ -170,8 +202,14 @@ def build_embed(bundle: ChartBundle, *, image_filename: str) -> discord.Embed:
         )
         embed.add_field(name="POI (nearest)", value=poi_text, inline=False)
     embed.add_field(name="AMT rationale", value=f"```{amt.rationale}```", inline=False)
+    embed.add_field(name="Signal rationale", value=f"```{signal.rationale}```", inline=False)
     embed.set_image(url=f"attachment://{image_filename}")
-    embed.set_footer(text=f"Timeframe {bundle.timeframe}  ·  bars={len(bundle.df)}")
+    embed.set_footer(
+        text=(
+            f"Timeframe {bundle.timeframe}  ·  bars={len(bundle.df)}  ·  "
+            "Not financial advice. Always size positions for your own risk."
+        )
+    )
     _ = DARK_THEME  # keep import even if unused at runtime
     return embed
 
@@ -215,3 +253,4 @@ def report_filename(symbol: str) -> str:
 
 # kept for re-export from reports.__init__
 _ = pd
+_ = TradeSignal

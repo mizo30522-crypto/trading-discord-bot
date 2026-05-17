@@ -37,6 +37,11 @@ def test_chart_bundle_runs_all_analyses(synthetic_bars: MarketBars) -> None:
     assert bundle.orderflow.bias in {"bullish", "bearish", "balanced"}
     # Developing VA produces at least one point.
     assert len(bundle.dva.poc) >= 1
+    # Trade signal is produced and consistent.
+    assert bundle.signal.bias in {"LONG", "SHORT", "NEUTRAL"}
+    assert bundle.signal.quality in {"high", "medium", "low"}
+    if bundle.signal.bias != "NEUTRAL":
+        assert bundle.signal.tp1.rr >= 0
 
 
 def test_chart_rendering_produces_png(synthetic_bars: MarketBars) -> None:

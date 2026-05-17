@@ -27,6 +27,12 @@ DARK_THEME: Final[dict[str, str]] = {
     "poi_res": "#ff7aa2",
     "poi_sup": "#7ad3ff",
     "poi_lvl": "#c2c8e0",
+    "trade_entry": "#ffffff",
+    "trade_sl": "#ff3b5c",
+    "trade_tp1": "#4ad991",
+    "trade_tp2": "#26d07c",
+    "trade_tp3": "#13a35e",
+    "trade_zone": "#1f6f5a",
 }
 
 
