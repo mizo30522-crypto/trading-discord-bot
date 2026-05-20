@@ -1,0 +1,61 @@
+name: Daily market report
+
+on:
+  schedule:
+    # 06:00 UTC = 7AM Algeria (UTC+1, no DST)
+    - cron: "0 6 * * *"
+    # 07:00 UTC = 8AM Algeria
+    - cron: "0 7 * * *"
+  # manual trigger for debugging / one-off posts
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Override symbols (comma-separated). Empty = use $SYMBOLS."
+        required: false
+        default: ""
+
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      SYMBOLS: "BTC/USDT,ETH/USDT,EURUSD=X,GBPUSD=X,USDJPY=X,GC=F"
+      CRYPTO_EXCHANGE: "kraken"
+      LOG_LEVEL: "INFO"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pipx install poetry==1.8.5
+
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies
+        run: poetry install --only main --no-interaction
+
+      - name: Post daily report
+        run: |
+          if [ -n "${{ inputs.symbols }}" ]; then
+            # shellcheck disable=SC2046
+            poetry run python -m trading_bot.oneshot $(echo "${{ inputs.symbols }}" | tr ',' ' ')
+          else
+            poetry run python -m trading_bot.oneshot
+          fi
